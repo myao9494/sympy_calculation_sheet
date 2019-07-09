@@ -2,9 +2,10 @@ from sympy import Symbol,pi,Eq
 from IPython.display import display
 from sympy.interactive import printing
 printing.init_printing(use_latex=True)
-import pandas as pd
-import re
 
+import utility
+
+#使用するシンボルはグローバルで定義
 σmax= Symbol('σ_max')
 eσmax= Symbol('σ_max')
 MPa= Symbol('(MPa)')
@@ -21,6 +22,7 @@ L= Symbol('L')
 eL= Symbol('L')
 mm= Symbol('(mm)')
 
+#使用するパラメータ（utilityを使って、これからシンボルを作る）
 paramater_dict= {
     "σmax":["曲げ応力","MPa"],
     "Mmax":["曲げモーメント","N_mm"],
@@ -29,45 +31,22 @@ paramater_dict= {
     "L":["梁の長さ","mm"]
     }
 
-def create_symbol():
+def create_symbols():
     global paramater_dict
-    out = []
-    out_g = []
-    for para in paramater_dict:
-        #パラメータを作る　二文字以上の場合は下付文字にする　e付は数式表示用
-        if len(para) !=1:
-            temp = para[:1]+"_"+para[1:]
-        else:
-            temp = para
-        out_g.append(para)
-
-        #単位を作成する 数字は上付きにして、_は・に変換する
-        unit = paramater_dict[para][1]
-        numerical_list = re.findall('[0-9]' , unit)
-
-        if len(numerical_list) != 0:
-            t = numerical_list[0]
-            unit = unit.replace(t,"^"+t)
-            unit =  "{" + unit +"}"
-        elif unit.find("_") != 0:
-            unit = unit.replace("_"," \cdot ")
-
-        unit = "(" + unit + ")"
-        out.append([para,temp])
-        out.append(["e"+para,temp])
-        out.append([paramater_dict[para][1],unit])
-
-        df = pd.DataFrame(out)
-        df = df.drop_duplicates()
-        out = df.values.tolist()
-    for elm in out:
-        print(elm[0] +"= Symbol('" +elm[1] +"')" )
-    g=""
-    for elm in out_g:
-        g = g + elm +","
-    print("global "+ g[:-1])
+    utility.create_symbol(paramater_dict)
 
 def siki_hyoji(atai,unit_opp = True):
+    """sympyで式を表示する関数です
+    　　（ a = b [mm]　の形で返す）
+    Arguments:
+        atai {str} -- パラメータ名
+    
+    Keyword Arguments:
+        unit_opp {bool} -- 単位の表示有無 (default: {True}単位を表示する)
+    
+    Returns:
+        [sympy] -- sympyの式をかえします
+    """
     ns = globals()
     hidari = ns["e"+atai]
     migi = ns[atai]
@@ -79,13 +58,13 @@ def siki_hyoji(atai,unit_opp = True):
     return siki
 
 def katamochi_bari(paramater):
-    """片持ち梁の計算書ネタを作成します
+    """片持ち梁の計算書ネタを作成します[荷重,長さ,断面係数]
     
     Arguments:
         paramater {list} -- [荷重,長さ,断面係数]
     """
     
-    global σmax,Mmax,Z,F,L
+    global σmax,Mmax,Z,F,L #global変数を編集可能にする
     print("曲げ応力は以下の式で表される")
     σmax = Mmax/Z
     Mmax = F*L
@@ -104,6 +83,6 @@ def katamochi_bari(paramater):
     display(siki_hyoji("Mmax"),siki_hyoji("σmax"))
 
 if __name__ == "__main__":
-    create_symbol()
+    create_symbols()
     paramater = [1000,500,1609]
     katamochi_bari(paramater)
